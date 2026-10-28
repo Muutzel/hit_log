@@ -56,6 +56,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -79,6 +80,13 @@ fun FightScreen(viewModel: FightViewModel = viewModel()) {
     val listState = rememberLazyGridState()
     var showClearDialog by remember { mutableStateOf(false) }
     var scrollToEnd by remember { mutableStateOf(false) }
+    var topMenuOpen by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val versionName = remember {
+        runCatching {
+            context.packageManager.getPackageInfo(context.packageName, 0).versionName
+        }.getOrNull() ?: "?"
+    }
 
     LaunchedEffect(scrollToEnd, enemies.size) {
         if (scrollToEnd && enemies.isNotEmpty()) {
@@ -95,6 +103,18 @@ fun FightScreen(viewModel: FightViewModel = viewModel()) {
                     if (enemies.isNotEmpty()) {
                         IconButton(onClick = { showClearDialog = true }) {
                             Icon(Icons.Default.Refresh, contentDescription = "Neuer Kampf")
+                        }
+                    }
+                    Box {
+                        IconButton(onClick = { topMenuOpen = true }) {
+                            Icon(Icons.Default.MoreVert, contentDescription = "Menü")
+                        }
+                        DropdownMenu(expanded = topMenuOpen, onDismissRequest = { topMenuOpen = false }) {
+                            DropdownMenuItem(
+                                text = { Text("Version $versionName") },
+                                enabled = false,
+                                onClick = {},
+                            )
                         }
                     }
                 },
