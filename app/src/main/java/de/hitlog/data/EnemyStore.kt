@@ -20,6 +20,7 @@ class EnemyStore(context: Context) {
                     name = obj.optString("name", ""),
                     toHit = obj.optString("toHit", ""),
                     damage = obj.optInt("damage", 0),
+                    defeated = obj.optBoolean("defeated", false),
                 )
             }
         } catch (e: Exception) {
@@ -36,6 +37,7 @@ class EnemyStore(context: Context) {
                     .put("name", enemy.name)
                     .put("toHit", enemy.toHit)
                     .put("damage", enemy.damage)
+                    .put("defeated", enemy.defeated)
             )
         }
         prefs.edit().putString(KEY_ENEMIES, array.toString()).apply()

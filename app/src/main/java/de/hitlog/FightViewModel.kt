@@ -41,12 +41,14 @@ class FightViewModel(app: Application) : AndroidViewModel(app) {
     fun changeDamage(id: Long, delta: Int) =
         updateEnemy(id) { it.copy(damage = (it.damage + delta).coerceIn(0, MAX_DAMAGE)) }
 
+    fun setDefeated(id: Long, defeated: Boolean) = updateEnemy(id) { it.copy(defeated = defeated) }
+
     fun duplicate(id: Long) {
         val list = enemies
         val index = list.indexOfFirst { it.id == id }
         if (index < 0) return
         val source = list[index]
-        val copy = source.copy(id = nextId(), name = nextName(source.name, list), damage = 0)
+        val copy = source.copy(id = nextId(), name = nextName(source.name, list), damage = 0, defeated = false)
         mutate { it.toMutableList().apply { add(index + 1, copy) } }
     }
 

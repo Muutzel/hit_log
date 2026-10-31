@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -26,6 +27,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedCard
@@ -56,9 +58,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -167,6 +171,7 @@ fun FightScreen(viewModel: FightViewModel = viewModel()) {
                         onNameChange = { viewModel.rename(enemy.id, it) },
                         onToHitChange = { viewModel.setToHit(enemy.id, it) },
                         onDamage = { viewModel.changeDamage(enemy.id, it) },
+                        onDefeatedChange = { viewModel.setDefeated(enemy.id, it) },
                         onDuplicate = { viewModel.duplicate(enemy.id) },
                         onDelete = {
                             viewModel.remove(enemy.id)
@@ -213,6 +218,7 @@ private fun EnemyCard(
     onNameChange: (String) -> Unit,
     onToHitChange: (String) -> Unit,
     onDamage: (Int) -> Unit,
+    onDefeatedChange: (Boolean) -> Unit,
     onDuplicate: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
@@ -221,6 +227,7 @@ private fun EnemyCard(
     var menuOpen by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
     val amount = damageInput.toIntOrNull() ?: 0
+    val contentAlpha = if (enemy.defeated) 0.4f else 1f
 
     fun applyDamage(sign: Int) {
         if (amount > 0) {
@@ -235,7 +242,10 @@ private fun EnemyCard(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             // Zeile 1: Name, To-Hit, Menü
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.alpha(contentAlpha),
+            ) {
                 OutlinedTextField(
                     value = enemy.name,
                     onValueChange = onNameChange,
@@ -286,8 +296,11 @@ private fun EnemyCard(
                 }
             }
 
-            // Zeile 2: Schaden anzeigen und ändern
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            // Zeile 2: Schaden anzeigen und ändern (bei besiegten Gegnern gesperrt)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.alpha(contentAlpha),
+            ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "Schaden",
@@ -308,6 +321,7 @@ private fun EnemyCard(
                 OutlinedTextField(
                     value = damageInput,
                     onValueChange = { damageInput = it.filter(Char::isDigit).take(4) },
+                    enabled = !enemy.defeated,
                     placeholder = {
                         Text("0", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
                     },
@@ -323,7 +337,7 @@ private fun EnemyCard(
                 Spacer(Modifier.width(8.dp))
                 FilledTonalIconButton(
                     onClick = { applyDamage(-1) },
-                    enabled = amount > 0,
+                    enabled = amount > 0 && !enemy.defeated,
                     modifier = Modifier.size(52.dp),
                 ) {
                     Text("−", style = MaterialTheme.typography.headlineSmall)
@@ -331,11 +345,27 @@ private fun EnemyCard(
                 Spacer(Modifier.width(6.dp))
                 FilledIconButton(
                     onClick = { applyDamage(+1) },
-                    enabled = amount > 0,
+                    enabled = amount > 0 && !enemy.defeated,
                     modifier = Modifier.size(52.dp),
                 ) {
                     Text("+", style = MaterialTheme.typography.headlineSmall)
                 }
+            }
+
+            // Zeile 3: Besiegt-Checkbox
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .toggleable(
+                        value = enemy.defeated,
+                        role = Role.Checkbox,
+                        onValueChange = onDefeatedChange,
+                    ),
+            ) {
+                Checkbox(checked = enemy.defeated, onCheckedChange = null)
+                Spacer(Modifier.width(8.dp))
+                Text("Besiegt", style = MaterialTheme.typography.bodyLarge)
             }
         }
     }
